@@ -1,0 +1,29 @@
+
+venv/scripts/activate
+$env:ENV="development"; uvicorn app.main:app --reload
+
+Grundlagen
+git init                      # Neues Git-Repository erstellen
+git clone <repo-url>          # Repository von GitHub klonen
+git status                    # Status der aktuellen Änderungen anzeigen
+git add .                     # Alle Änderungen zum Commit vormerken
+git commit -m "Beschreibung"  # Änderungen committen
+git push origin <branch>      # Änderungen zu GitHub hochladen
+git push origin main          # Änderungen zu GitHub hochladen
+git pull origin <branch>      # Änderungen von GitHub holen
+
+Branches verwalten
+git branch                     # Alle lokalen Branches anzeigen
+git branch -a                   # Alle (auch entfernte) Branches anzeigen
+git branch <branch-name>         # Neuen Branch erstellen
+git checkout <branch-name>       # Zu einem anderen Branch wechseln
+git checkout -b <branch-name>    # Neuen Branch erstellen und direkt wechseln
+git merge <branch-name>          # Branch in aktuellen Branch mergen
+git branch -d <branch-name>      # Lokalen Branch löschen
+git push origin --delete <branch-name>  # Entfernten Branch löschen
+
+Mit Git Hub arbeiten
+git push origin <branch>        # Branch auf GitHub hochladen
+git pull origin <branch>        # Neuste Änderungen von GitHub holen
+git fetch                       # Änderungen von GitHub abrufen (ohne Mergen)
+git rebase <branch>             # Änderungen von <branch> auf aktuellen Branch anwenden

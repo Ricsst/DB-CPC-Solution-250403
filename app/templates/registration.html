@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrierung</title>
+</head>
+<body>
+    <h1>Registrierung</h1>
+    <form id="registerForm">
+        <label for="email">E-Mail:</label>
+        <input type="email" id="email" name="email" required>
+        <br>
+
+        <label for="username">Benutzername:</label>
+        <input type="text" id="username" name="username" required>
+        <br>
+
+        <label for="first_name">Vorname:</label>
+        <input type="text" id="first_name" name="first_name" required>
+        <br>
+
+        <label for="last_name">Nachname:</label>
+        <input type="text" id="last_name" name="last_name" required>
+        <br>
+
+        <label for="password">Passwort:</label>
+        <input type="password" id="password" name="password" required>
+        <br>
+
+        <label for="role">Rolle:</label>
+        <input type="text" id="role" name="role" required>
+        <br>
+
+        <button type="submit">Registrieren</button>
+    </form>
+
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const username = document.getElementById('username').value;
+            const first_name = document.getElementById('first_name').value;
+            const last_name = document.getElementById('last_name').value;
+            const password = document.getElementById('password').value;
+            const role = document.getElementById('role').value;
+
+            // weil server in Entwicklung und Production nicht dieselben sind
+            const API_URL = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+            ? "http://127.0.0.1:8000"  // Entwicklung
+            : "https://projektsteuerung-250218.onrender.com"; // Produktion
+
+
+
+            // Überprüfe, ob alle Felder ausgefüllt sind
+            if (!email || !username || !first_name || !last_name || !password || !role) {
+                alert('Bitte füllen Sie alle Felder aus.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, username, first_name, last_name, password, role })
+                });
+
+                if (response.ok) {
+                    alert('Registrierung erfolgreich! Sie können sich jetzt anmelden.');
+                    window.location.href = '/loginpage'; // Optional: Weiterleitung zur Login-Seite
+                } else {
+                    const errorData = await response.json();
+                    alert('Fehler: ' + errorData.detail);
+                }
+            } catch (error) {
+                console.error('Fehler:', error);
+                alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+            }
+        });
+    </script>
+</body>
+</html>

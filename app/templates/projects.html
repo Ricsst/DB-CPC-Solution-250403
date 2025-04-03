@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="de">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Projektliste</title>
+        <link rel="icon" href="/static/favicon.ico" type="image/x-icon">
+
+        <!-- Tailwind CSS -->
+        <script src="https://cdn.tailwindcss.com"></script>
+        <!-- Font Awesome -->
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js" defer></script>
+        <script src="/static/js/rapports.js" defer></script>
+        
+        <style>
+             /* Rücksetzen von Margin und Padding */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+            .delete-button {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                background-color: #9ba087; /* Red-500 */
+                color: white;
+                padding: 0.2rem;
+                border-radius: 0.2rem; /* Rounded */
+                font-size: 0.5rem; /* Icon size */
+                transition: background-color 0.2s ease;
+                border: none;
+                cursor: pointer;
+            }
+            .delete-button:hover {
+                background-color: #38a169; /* Green-600 */
+            }
+
+            .selected {
+                background-color: yellow !important;
+                font-weight: bold;
+            }
+        /* Verfeinerte Umrandung und Styling */
+            #rapport-table-body td {
+                border: 1px solid #ddd;   /* Helles Grau */
+                padding: 8px;              /* Innenabstand */
+                border-radius: 4px;        /* Abgerundete Ecken */
+            }
+
+            /* Abwechselnde Zeilenfarbe */
+            #rapport-table-body tr:nth-child(odd) {
+                background-color: #f9f9f9;
+            }
+
+            /* Hover-Effekt für Zellen */
+            #rapport-table-body td:hover {
+                background-color: #fafafa;
+            }
+
+            /* Zeilen-Trenner */
+            #rapport-table-body tr {
+                border-bottom: 1px solid #ddd;
+            }
+
+        </style>
+    </head>
+
+    <style>
+        table   {
+            font-size: 14px;
+        }
+    </style>
+
+
+
+<body class="bg-gray-100 p-6">
+        <div class="w-full">
+            <!-- Zeile mit drei Buttons oben -->
+        <!-- Zeile mit drei Buttons nebeneinander auf der linken Seite -->
+        <div class="flex space-x-4 mb-4">
+            <button id="pluswoche" class="bg-blue-500 text-white p-2 rounded-lg">+ Woche</button>
+            <button id="wochentodos" class="bg-blue-500 text-white p-2 rounded-lg">Wochentodos</button>
+            <button id="replaceNameBtn" class="bg-blue-500 text-white p-2 rounded-lg">User; RS Büro</button>
+            <span id="wochenanzeige" class="text-lg font-semibold bg-gray-200 p-2 rounded-lg"></span>
+        </div>
+            <!-- Flex-Container für drei Spalten -->
+            <div class="flex space-x-4">
+                <!-- Erste Spalte: Projektliste (geht über die gesamte Höhe der Seite) -->
+                <div class="w-1/3 bg-white shadow-md rounded-lg overflow-hidden h-full">
+                
+
+                    <div class="flex items-center justify-between px-4 py-3 bg-gray-50">
+                        <h2 class="text-lg font-bold">Projekte</h2>
+
+                  
+                        <div class="mt-4">
+                            <button id="create-project-button" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                            +
+                            </button> 
+                        </div>
+                    
+                        <div class="mt-4">
+                            <button id="create-note-button" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600" disabled>
+                                Zu Notizen
+                            </button>
+                        </div>
+
+                        <!-- Filterfeld -->
+                        <div class="mt-4">
+                        <input id="project-filter" type="text" class="px-4 py-2 border rounded-lg" placeholder="Projekt nach Location filtern" />
+                        </div>
+                    </div>
+                     <!-- Filter nach Leader -->
+                     <div class="mt-4">
+                        <label for="leader-filter" class="text-sm font-medium text-gray-700">PL filtern:</label>
+                        <select id="leader-filter" class="px-4 py-2 border rounded-lg w-full">
+                            <option value="">Alle</option>
+                        </select>
+                    </div>
+                    
+                    <table id="sortableTable" class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="sortable px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase" style="width: 5%; font-size: 14px;">ID</th>
+                                <th class="sortable px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase" style="width: 10%; font-size: 14px;">Nummer</th>
+                                <th class="sortable px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase" style="width: 60%; font-size: 14px;">Titel</th>
+                                <th class="sortable px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase" style="width: 12%; font-size: 14px;">Standort</th>
+                                <th class="sortable px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase" style="width: 12%; font-size: 14px;">PL</th>
+                                <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase" style="width: 3%; font-size: 14px;">Del</th>
+                            </tr>
+                        </thead>
+                        <tbody id="projects-table-body">
+                            <!-- Dynamisch eingefügte Projektreihen -->
+                        </tbody>
+                    </table>
+                    
+                </div>
+           
+                <!-- Zweite Spalte: Todo-Liste, Attachments, Telefonate -->
+                <div class="w-1/3 flex flex-col h-screen">
+                <!-- Obere Hälfte: Todo-Liste und Attachments -->
+                <div class="flex-grow">
+                    <!-- Todo-Liste -->
+                    <div class="bg-white shadow-md rounded-lg overflow-hidden mb-4">
+                        <div class="flex items-center justify-between px-4 py-3 bg-gray-50">
+                            <h2 class="text-lg font-bold">Pendenzen</h2>
+                            
+                            <button id="list-pendenzen-button" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                                List
+                            </button>
+
+                            <button id="create-pendenzen-button" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                                +
+                            </button>
+                            
+                        </div>
+
+                        <table id="todo-list" class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase w-2/3" style="font-size: 14px;">Todo</th>
+                                    <th class="px-4 py-1 text-left text-xs font-medium text-gray-500 uppercase w-1/3" style="font-size: 14px;">Week</th>
+                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase" style="width: 3%; font-size: 14px;">Del</th>
+                                </tr>
+                            </thead>
+                           
+                            <tbody id="todos-table-body">
+                                <!-- Todos werden hier mit JavaScript eingefügt -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                       
+                       <!-- Attachments Liste als Tabelle -->
+                       <div class="bg-gray-50 p-4 shadow-md rounded-lg">
+                        <div class="flex items-center justify-between mb-2"> <!-- Flexbox Container -->
+                            <h2 class="text-lg mb-2">Anhänge</h2>
+                            <button id="create-attachment-button" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                                +
+                            </button>
+                        </div>
+                        <table id="attachment-list" class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Anhang</th>
+                                    <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase">Del</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attachments-table-body"><!-- Das JS fügt hier Zeilen ein -->
+                            </tbody>
+                            
+                        </table>
+                    </div>
+                    
+
+
+                    </div>
+
+                    <!-- Untere Hälfte: Telefonliste -->
+                    <div class="h-1/2 bg-gray-50 p-4 shadow-md rounded-lg">
+                        <!-- Container für Titel und Button -->
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-lg font-bold">Telefonate</h2>
+                            <button id="create-phone-button" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                                +
+                            </button>
+                        </div>
+                        <div class="overflow-auto">
+                            <table id="phone-list" class="min-w-full divide-y divide-gray-200">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Name</th>
+                                        <th>Beschreibung</th>
+                                        <th>Nummer</th>
+                                        <th>Del</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="phones-table-body"> <!-- Das JS fügt hier Zeilen ein -->
+                                </tbody>
+                            </table>
+                            
+                        </div>
+                    </div>
+                    
+                </div>
+
+                <!-- Dritte Spalte: Meilensteine und Rapport-Liste -->
+                <div class="w-1/3 flex flex-col h-screen">
+                    <!-- Obere Hälfte: Meilensteine -->
+                    <div class="flex-grow">
+                        <!-- Meilensteine-Tabelle -->
+                        <div class="bg-white shadow-md rounded-lg overflow-hidden mb-4">
+                            <div class="flex items-center justify-between px-4 py-3 bg-gray-50">
+                                <h2 class="text-lg font-bold">Meilensteine</h2>
+                                <button id="create-milestone-button" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                                    +
+                                </button>
+                            </div>
+
+                          <!-- Meilensteine-Tabelle -->
+                            <table id="milestones-list" class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase" style="width: 5%; font-size: 14px;">ID</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase" style="width: 10%; font-size: 14px;">Nummer</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase" style="width: 60%; font-size: 14px;">Titel</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase" style="width: 10%; font-size: 14px;">Standort</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase" style="width: 10%; font-size: 14px;">Erstellt am</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase" style="width: 5%; font-size: 14px;">Del</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="milestones-table-body">
+                                    <!-- JS füllt die Daten hier ein -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Untere Hälfte: Rapport-Liste -->
+                    <div class="h-1/2 bg-gray-50 p-4 shadow-md rounded-lg">
+                        <!-- Container für Titel und Button -->
+                            <div class="flex items-center justify-between mb-4">
+                                <h2 class="text-lg font-bold">Rapport</h2>
+                                <button id="create-rapport-button" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                                    +
+                                </button>
+                                <button id="delete-rapport-button" 
+                                    type="button" 
+                                    class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 cursor-pointer"
+                                    title="Alle Rapports löschen">
+                                Del All
+                            </button>
+                            </div>
+                        <div class="overflow-auto">
+                            <table class="min-w-full divide-y divide-gray-200 rapports-table" id="rapport-table">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[10%]">ID</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[10%]">Dat</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[41%]">Projekt</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[2%]">Erl</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[2%]">Prio</th>
+                                        <th id="plan-header" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[2%]">
+                                            Plan
+                                        </th>
+                                        <th id="eff-header" class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[2%]">
+                                            Eff
+                                        </th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-[40%]">Bemerkung</th>
+                                        <th class="px-1 py-1 text-left text-xs font-medium text-gray-500 uppercase w-[1%]">Del</th>
+                                    </tr>
+                                </thead>
+                                
+                                <tbody id="rapport-table-body">
+                                    <!-- JS füllt die Daten hier ein -->
+                                </tbody>
+                                
+                                
+                            </table>
+                        </div>
+                    </div>
+                    
+                </div>
+
+            </div>
+        </div>         
+
+        <script>
+
+           
+            document.addEventListener('DOMContentLoaded', async () => {
+                const token = localStorage.getItem('access_token');
+                if (!token) {
+                    alert('Kein Token gefunden. Bitte melden Sie sich an.');
+                    window.location.href = '/';
+                    return;
+                }
+                console.log("Gespeichertes Token:", token);
+            
+                try {
+                    const response = await fetch('/projects/projects', {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+            
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            alert('Nicht autorisiert. Bitte melden Sie sich erneut an.');
+                            window.location.href = '/';
+                        } else {
+                            alert('Fehler beim Laden der Daten.');
+                        }
+                        return;
+                    }
+            
+                    const data = await response.json();
+            
+                    // Daten sicherstellen
+                    const projects = data.projects || [];
+                    const todos = data.todos || [];
+                    const attachments = data.attachments || [];
+                    const phones = data.phones || [];
+                    const rapports = data.rapports || [];
+            
+                    // *** 1. Projekte-Tabelle ***
+                    const projectsTbody = document.getElementById('projects-table-body');
+                    projectsTbody.innerHTML = '';
+            
+                    projects
+                        .sort((a, b) => a.location.localeCompare(b.location)) // 🔠 Sortierung nach location
+                        .forEach(project => {
+                            const tr = document.createElement('tr');
+                            tr.className = 'cursor-pointer hover:bg-gray-100 project-row border border-gray-300 text-sm';
+                            tr.dataset.projectId = project.id;
+                            tr.onclick = () => selectProject(project.id);
+
+                            tr.innerHTML = `
+                                <td class="px-1 py-0.5 whitespace-nowrap" contenteditable="true" data-field="id">${project.id}</td>
+                                <td class="px-1 py-0.5 whitespace-nowrap" contenteditable="true" data-field="nr">${project.nr}</td>
+                                <td class="px-1 py-0.5 whitespace-nowrap" contenteditable="true" data-field="title">${project.title}</td>
+                                <td class="px-1 py-0.5 whitespace-nowrap" contenteditable="true" data-field="location">${project.location}</td>
+                                <td class="px-1 py-0.5 whitespace-nowrap" contenteditable="true" data-field="location">${project.leader}</td>
+                                <td class="px-1 py-0.5 whitespace-nowrap">
+                                    <button class="delete-button project-delete-button" data-project-id="${project.id}">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </td>
+                            `;
+
+                            projectsTbody.appendChild(tr);
+                        });
+
+
+
+                    
+                    // *** 2. Todos-Tabelle ***
+                    const todosTbody = document.getElementById('todos-table-body');
+                    todosTbody.innerHTML = '';
+            
+                    todos.forEach(todo => {
+                        const tr = document.createElement('tr');
+                        tr.dataset.projectId = todo.project_id;
+                        tr.dataset.todoId = todo.id;
+                        tr.onclick = () => filterAttachments(todo.id);
+            
+                        tr.innerHTML = `
+                            <td class="px-2 py-1 whitespace-nowrap w-2/3" contenteditable="true" data-field="todo">${todo.todo}</td>
+                            <td class="px-2 py-1 whitespace-nowrap w-1/3" contenteditable="true" data-field="week">${todo.week}</td>
+                            <td class="px-2 py-1 whitespace-nowrap">
+                                <button class="delete-button-todo" onclick="deleteTodo(${todo.id})">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        todosTbody.appendChild(tr);
+                    });
+                    
+                                       
+            
+                    // *** 3. Attachments-Tabelle ***
+                    const attachmentsTbody = document.getElementById('attachment-list').querySelector('tbody');
+                    attachmentsTbody.innerHTML = '';
+            
+                    attachments.forEach(attachment => {
+                        const tr = document.createElement('tr');
+                        tr.dataset.attachmentId = attachment.id;
+                        tr.dataset.todoId = attachment.todo_id;
+            
+                        tr.innerHTML = `
+                            <td class="px-4 py-2 text-sm text-gray-700">${attachment.id}</td>
+                            <td class="px-4 py-2 text-sm text-gray-700" contenteditable="true" 
+                                data-field="attachment"
+                                ondblclick="handleAttachmentDoubleClick(event, ${attachment.id})">
+                                ${attachment.attachment}
+                            </td>
+                            <td class="px-4 py-2 text-sm text-gray-700">
+                                <button class="delete-button" onclick="deleteAttachment(${attachment.id})">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </td>
+                        `;
+                        attachmentsTbody.appendChild(tr);
+                    });
+            
+                    // *** 4. Telefonliste-Tabelle ***
+                    const phonesTbody = document.getElementById('phone-list').querySelector('tbody');
+                    phonesTbody.innerHTML = '';
+            
+                    phones.forEach(phone => {
+                        const tr = document.createElement('tr');
+                        tr.className = 'cursor-pointer hover:bg-gray-100 phone-row';
+                        tr.dataset.phoneId = phone.id;
+                        tr.onclick = () => selectPhone(phone.id);
+            
+                        tr.innerHTML = `
+                            <td class="px-4 py-2 text-sm text-gray-700" contenteditable="true" data-field="id">${phone.id}</td>
+                            <td class="px-4 py-2 text-sm text-gray-700" contenteditable="true" data-field="name">${phone.name}</td>
+                            <td class="px-4 py-2 text-sm text-gray-700" contenteditable="true" data-field="beschreibung">${phone.beschreibung}</td>
+                            <td class="px-4 py-2 text-sm text-gray-700" contenteditable="true" data-field="number">${phone.number}</td>
+                            <td class="px-2 py-1 whitespace-nowrap">
+                                <button class="delete-button phone-delete-button" data-phone-id="${phone.id}">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </td>
+                        `;
+
+                        phonesTbody.appendChild(tr);
+                    });
+                    
+               /* 
+                // *** 3. Meilensteine-Tabelle ***
+                const milestonesTbody = document.getElementById('milestones-table-body');
+                milestonesTbody.innerHTML = '';
+
+                milestones.forEach(milestone => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td contenteditable="true">${milestone.id}</td>
+                        <td contenteditable="true">${milestone.nr}</td>
+                        <td contenteditable="true">${milestone.title}</td>
+                        <td contenteditable="true">${milestone.location}</td>
+                        <td>${new Date(milestone.created_at).toLocaleDateString()}</td>
+                        <td>
+                            <button class="delete-button" onclick="deleteMilestone(${milestone.id})">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </td>
+                    `;
+                    milestonesTbody.appendChild(tr);
+                });
+                */
+
+
+                // *** 4. Rapporte-Tabelle ***
+                const rapportsTbody = document.getElementById('rapport-table-body');
+                    rapportsTbody.innerHTML = '';
+
+                    rapports.forEach(rapport => {
+                        const tr = document.createElement('tr');
+                        tr.classList.add('rapport-row'); // Füge die Klasse hinzu
+                        tr.dataset.rapportId = rapport.id;
+
+                        tr.innerHTML = `
+                            <td contenteditable="true" data-field="id">${rapport.id}</td>
+                            <td contenteditable="true" data-field="date">${rapport.date ? new Date(rapport.date).toLocaleDateString("de-DE") : ''}</td>                        
+                            <td contenteditable="true" data-field="project">${rapport.project ?? ''}</td>
+                            <td contenteditable="true" data-field="done">${rapport.done ?? ''}</td>
+                            <td contenteditable="true" data-field="priority">${rapport.priority ?? ''}</td>
+                            <td contenteditable="true" data-field="plan">${rapport.plan ?? ''}</td>
+                            <td contenteditable="true" data-field="effektiv">${rapport.effektiv ?? ''}</td>
+                            <td contenteditable="true" data-field="bemerkung">${rapport.bemerkung ?? ''}</td>
+                            <td>
+                            <button class="delete-button" onclick="deleteRapport(${rapport.id})">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                            </td>
+                        `;
+
+                        rapportsTbody.appendChild(tr);
+                    });
+
+                    
+                        } catch (error) {
+                            console.error('Fehler:', error);
+                            alert('Es gab einen Fehler beim Abrufen der Daten.');
+                        }
+                    });
+                    // Rufe calculateSums auf, nachdem alle Zeilen hinzugefügt wurden
+                    calculateSums();
+
+
+        function selectProject(projectId) {
+            // Funktion zur Auswahl eines Projekts
+            console.log('Projekt ausgewählt:', projectId);
+            // Hier kannst du weitere Aktionen hinzufügen, z.B. Weiterleitung zu einer Detailseite
+        }
+
+        function handleDoubleClick(event, projectNr) {
+            // Funktion, die beim Doppelklick auf die Projektnummer aufgerufen wird
+            console.log('Projektnummer doppelt geklickt:', projectNr);
+            // Hier kannst du weitere Aktionen hinzufügen, z.B. Bearbeiten der Projektnummer
+        }
+
+        function calculateSums() {
+        let planTotal = 0;
+        let effTotal = 0;
+        console.log("calculateSums wurde aufgerufen");
+
+        document.querySelectorAll("tbody .rapport-row").forEach(row => {
+            // Wähle die Zellen aus
+            const planCell = row.querySelector("td:nth-child(6)");
+            const effCell = row.querySelector("td:nth-child(7)");
+
+            // Logge die Zelleninhalte, um sicherzustellen, dass sie korrekt gelesen werden
+            console.log("Plan-Zelle Inhalt:", planCell ? planCell.innerText.trim() : "Nicht gefunden");
+            console.log("Eff-Zelle Inhalt:", effCell ? effCell.innerText.trim() : "Nicht gefunden");
+
+            // Parsen der Inhalte als Fließkommazahl und auf 0 setzen, wenn der Inhalt nicht numerisch ist
+            const planValue = parseFloat(planCell ? planCell.innerText.trim() : "0");
+            const effValue = parseFloat(effCell ? effCell.innerText.trim() : "0");
+
+            // Logge die Werte, die geparsed wurden
+            console.log("Parsed Plan-Wert:", planValue);
+            console.log("Parsed Eff-Wert:", effValue);
+
+            // Summen berechnen
+            planTotal += planValue;
+            effTotal += effValue;
+
+            // Zwischensummen nach jeder Zeile loggen
+            console.log("Zwischensummen:", planTotal, effTotal);
+        });
+
+        // Endgültige Summen loggen
+        console.log("Totale Summen:", planTotal, effTotal);
+
+        // Header mit den berechneten Werten aktualisieren
+        document.getElementById("plan-header").innerHTML = `Plan <span class="text-xs font-normal">(${planTotal.toFixed(2)})</span>`;
+        document.getElementById("eff-header").innerHTML = `Eff <span class="text-xs font-normal">(${effTotal.toFixed(2)})</span>`;
+        }
+
+        
+    </script>
+    <script>
+
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        console.log("Suche nach 'todos-table-body':", document.getElementById('todos-table-body'));
+
+        // Todos in die Tabelle einfügen
+        const tbody = document.getElementById('todos-table-body');
+        tbody.innerHTML = ''; // Alte Inhalte entfernen
+
+        // ❗️ Hier fehlt die Definition von `data.todos` ❗️
+        // Beispiel:
+        const data = { todos: [] }; // Diese Zeile entfernen, falls `data` schon vorhanden ist
+
+        data.todos.forEach(todo => {
+            const tr = document.createElement('tr');
+            tr.dataset.projectId = todo.project_id;
+            tr.dataset.todoId = todo.id;
+            tr.onclick = () => filterAttachments(todo.id);
+
+            tr.innerHTML = `
+                <td class="px-2 py-1 whitespace-nowrap w-2/3" contenteditable="true" data-field="todo" data-id="${todo.id}">
+                    <span class="todo-text">${todo.todo}</span>
+                </td>
+                <td class="px-2 py-1 whitespace-nowrap w-1/3" contenteditable="true" data-field="week" data-id="${todo.id}">
+                    <span class="week-text">${todo.week}</span>
+                </td>
+                <td class="px-2 py-1 whitespace-nowrap">
+                    <button class="delete-button" onclick="deleteTodo(${todo.id})">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            `;
+
+            tbody.appendChild(tr);
+        });
+
+    } catch (error) {
+        console.error('Fehler beim Abrufen der Daten:', error);
+        alert('Es gab einen Fehler beim Abrufen der Daten.');
+    }
+});
+
+
+window.deleteAttachment = function (attachmentId) {
+    console.log("deleteAttachment wurde aufgerufen mit ID:", attachmentId);
+    fetch(`/attachments/${attachmentId}`, { method: "DELETE" })
+        .then((response) => {
+            if (response.ok) {
+                console.log(`Attachment mit ID ${attachmentId} gelöscht`);
+               // window.location.reload();
+            } else {
+                console.error(`Fehler: Attachment ${attachmentId} konnte nicht gelöscht werden.`);
+            }
+        })
+        .catch((err) => {
+            console.error("Fehler:", err);
+        });
+};
+
+
+// #########################################################################################################
+// Funktion: Filter für PL-Spalte   
+document.addEventListener("DOMContentLoaded", function () {
+    const table = document.getElementById("sortableTable");
+    const tbody = table.querySelector("tbody");
+    const rows = Array.from(tbody.querySelectorAll("tr"));
+    const leaderFilter = document.getElementById("leader-filter");
+
+    // 🔹 Die PL-Spalte (Leader) ist jetzt die **5. Spalte** (Index 4)
+    let uniqueLeaders = [...new Set(rows.map(row => row.cells[4].textContent.trim()))];
+
+    // Sortierte Werte ins Dropdown einfügen
+    uniqueLeaders.sort().forEach(value => {
+        let option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        leaderFilter.appendChild(option);
+    });
+
+    // 🔹 Tabelle nach Leader ("PL") filtern
+    leaderFilter.addEventListener("change", function () {
+        const selectedLeader = this.value;
+        rows.forEach(row => {
+            let cellValue = row.cells[4].textContent.trim(); // Holt den PL-Wert
+            row.style.display = (selectedLeader === "" || cellValue === selectedLeader) ? "" : "none";
+        });
+    });
+});
+
+    </script>
+        
+    <script src="/static/js/projects.js" defer></script>
+    <script src="/static/js/phones.js" defer></script>    
+    <script src="/static/js/todos.js" defer></script> 
+ 
+    <script src="/static/js/attachments.js" defer></script> 
+    <script> console.log(" static wurde geladen");</script>
+    
+</body>
+</html>

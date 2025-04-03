@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Projektsteuerung</title>
+    <!-- Bootstrap CSS über CDN einbinden -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="d-flex justify-content-center align-items-center" style="height: 100vh; background-color: #f4f4f9;">
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-4">
+                <div class="card shadow-sm">
+                    <div class="card-header text-center bg-primary text-white">
+                        <h3>Login Projektsteuerung</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="loginForm">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">E-Mail</label>
+                                <input type="email" class="form-control" id="username" name="username" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Passwort</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100">Anmelden</button>
+                            <button type="button" class="btn btn-primary w-100" onclick="window.location.href='registration'">Registrieren falls kein Login</button>
+
+                        </form>
+                        <div id="tokenOutput" class="mt-3 text-center text-success"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS (optional) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+   
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async function(event) {
+            event.preventDefault(); // Verhindert das Standard-Formular-Submit-Verhalten
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            // weil host in Entwicklung und Produktion nicht dieselben sind
+            const API_URL = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+            ? "http://127.0.0.1:8000"  // Entwicklung
+            : "https://projektsteuerung-250218.onrender.com"; // Produktion
+
+
+            // Überprüfe, ob die Felder leer sind
+            if (!username || !password) {
+                alert('Bitte geben Sie sowohl die E-Mail-Adresse als auch das Passwort ein.');
+                return;
+            }
+
+            try {
+                // FormData im x-www-form-urlencoded-Format erstellen
+                const formData = new URLSearchParams();
+                formData.append('username', username);
+                formData.append('password', password);
+
+                // Sende die Daten an die API
+                //const response = await fetch('http://127.0.0.1:8000/login', {
+                const response = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded', // Wichtig
+                    },
+                    body: formData.toString()
+                });
+                alert('login wurde aufgerufen.');
+                console.log(formData.toString());
+
+                // Überprüfe die Antwort der API
+                if (response.ok) {
+                    const data = await response.json();
+                    // Token im LocalStorage speichern
+                    localStorage.setItem('access_token', data.access_token);
+                    // Zur Post-Seite weiterleiten
+                    window.location.href = '/projects';
+                } else {
+                    const errorData = await response.json();
+                    alert('Error: ' + errorData.detail);
+                }
+            } catch (error) {
+                console.error('Fehler beim Senden der Anfrage:', error);
+                alert('Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.');
+            }
+        });
+    </script>
+    
+</body>
+</html>
